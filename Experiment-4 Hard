@@ -1,0 +1,62 @@
+import java.util.Scanner;
+import java.util.concurrent.locks.*;
+class TicketBookingSystem {
+    private final boolean[] seats;
+    private final Lock lock = new ReentrantLock();
+    public TicketBookingSystem(int totalSeats) {
+        seats = new boolean[totalSeats];
+    }
+    public void bookSeat(int seatNumber, String customer) {
+        lock.lock();
+        try {
+            if (!seats[seatNumber]) {
+                seats[seatNumber] = true;
+                System.out.println(customer + " successfully booked seat " + seatNumber);
+            } else {
+                System.out.println(customer + " failed to book seat " + seatNumber + " (Already booked)");
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+class BookingThread extends Thread {
+    private final TicketBookingSystem system;
+    private final int seatNumber;
+    private final String customer;
+    public BookingThread(TicketBookingSystem system, int seatNumber, String customer, int priority) {
+        this.system = system;
+        this.seatNumber = seatNumber;
+        this.customer = customer;
+        setPriority(priority);
+    }
+    @Override
+    public void run() {
+        system.bookSeat(seatNumber, customer);
+    }
+}
+public class TicketBookingApp {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter total number of seats: ");
+        int totalSeats = scanner.nextInt();
+        TicketBookingSystem system = new TicketBookingSystem(totalSeats);
+        System.out.print("Enter number of users: ");
+        int userCount = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+        Thread[] users = new Thread[userCount];
+        for (int i = 0; i < userCount; i++) {
+            System.out.print("Enter customer name: ");
+            String customer = scanner.nextLine();
+            System.out.print("Enter seat number to book: ");
+            int seatNumber = scanner.nextInt();
+            System.out.print("Enter priority (1-10, 10 is highest): ");
+            int priority = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+            users[i] = new BookingThread(system, seatNumber, customer, priority);
+        }
+        for (Thread user : users) {
+            user.start();
+        }
+        scanner.close();
+    }}
